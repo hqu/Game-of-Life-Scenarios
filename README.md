@@ -8,8 +8,8 @@ Open `index.html` in a browser. It is a single self-contained page; no install o
 
 Each can be switched on in the top-right corner, with a slider to set its strength.
 
-- **Rich get richer** — a student whose first roll totals 11 or 12 becomes a "trust fund kid" and re-rolls any die showing 1 (up to 1–3) on rolls 2–5.
 - **Gender penalty** — every die a female student rolls counts 0.1 to 1.0 less.
+- **Rich get richer** — a student whose first roll totals 11 or 12 becomes a "trust fund kid" and re-rolls any die showing 1 (up to 1–3) on rolls 2–5.
 - **Compound interest** — after each roll a student pays 3 in living expenses, then savings above 10 earn 10%–100% interest, which compounds on later rolls.
 
 ## Charts and measures

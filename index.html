@@ -180,20 +180,20 @@ tr.diff td:last-child { font-family: var(--f-display); font-size: 1.35rem; font-
       <div class="scen" role="group" aria-label="Bias scenarios">
         <span class="scen-h">Bias scenarios</span>
         <div class="tip-wrap">
-          <label class="switch" for="tRich"><input type="checkbox" id="tRich" aria-describedby="tipRich"><span class="track"></span>Rich get richer<span class="q" aria-hidden="true">?</span></label>
-          <div class="tip" role="tooltip" id="tipRich">If a student's first roll adds up to more than 10 (an 11 or a 12), then on rolls 2–5 any die that lands on 1, 2 or 3 is rolled again, once. These trust fund kids keep an advantage for the rest of the game.</div>
-        </div>
-        <div class="slider" id="richBox">
-          <label for="sRich">Re-roll dice showing</label><output id="oRich" for="sRich">1–3</output>
-          <input type="range" id="sRich" min="1" max="3" step="1" value="3">
-        </div>
-        <div class="tip-wrap">
           <label class="switch" for="tGender"><input type="checkbox" id="tGender" aria-describedby="tipGender"><span class="track"></span>Gender penalty<span class="q" aria-hidden="true">?</span></label>
           <div class="tip" role="tooltip" id="tipGender">Students 1–50 are male and 51–100 are female. Every die value a female student rolls is reduced by 0.5, so her total drops by 5 (10 dice × 0.5). This is a small, systematic bias against one group.</div>
         </div>
         <div class="slider" id="genderBox">
           <label for="sGender">Penalty per female die</label><output id="oGender" for="sGender">−0.5</output>
           <input type="range" id="sGender" min="0.1" max="1" step="0.1" value="0.5">
+        </div>
+        <div class="tip-wrap">
+          <label class="switch" for="tRich"><input type="checkbox" id="tRich" aria-describedby="tipRich"><span class="track"></span>Rich get richer<span class="q" aria-hidden="true">?</span></label>
+          <div class="tip" role="tooltip" id="tipRich">If a student's first roll adds up to more than 10 (an 11 or a 12), then on rolls 2–5 any die that lands on 1, 2 or 3 is rolled again, once. These trust fund kids keep an advantage for the rest of the game.</div>
+        </div>
+        <div class="slider" id="richBox">
+          <label for="sRich">Re-roll dice showing</label><output id="oRich" for="sRich">1–3</output>
+          <input type="range" id="sRich" min="1" max="3" step="1" value="3">
         </div>
         <div class="tip-wrap">
           <label class="switch" for="tRate"><input type="checkbox" id="tRate" aria-describedby="tipRate"><span class="track"></span>Compound interest<span class="q" aria-hidden="true">?</span></label>
