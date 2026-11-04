@@ -1,0 +1,1102 @@
+<title>Five Rolls, Two Dice</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a classroom projector board. Title left, bias switches top right, dice table and controls, then the two charts side by side, then the roster. */
+:root {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --ink: #18212d;
+  --muted: #586374;
+  --line: #d3d9e2;
+  --x: #2456c4;       /* die X (blue) */
+  --y: #c4362c;       /* die Y (red) */
+  --bar: #2a7b6d;     /* male students */
+  --fem: #7b4cc4;     /* female students */
+  --pip: #ffffff;
+  --warn-bg: #fff4d6;
+  --warn-fg: #6b4c00;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10151c; --surface: #18202a; --ink: #e5eaf1; --muted: #9ca8b8; --line: #2b3542;
+    --x: #6e9bff; --y: #ff7b6f; --bar: #4db7a2; --fem: #b597f5; --pip: #ffffff; --warn-bg: #3a2f12; --warn-fg: #f3d68a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10151c; --surface: #18202a; --ink: #e5eaf1; --muted: #9ca8b8; --line: #2b3542;
+  --x: #6e9bff; --y: #ff7b6f; --bar: #4db7a2; --fem: #b597f5; --pip: #ffffff; --warn-bg: #3a2f12; --warn-fg: #f3d68a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+
+header { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 16px 32px; }
+header > div:first-child { flex: 1 1 420px; min-width: 0; }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.05; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 .xx { color: var(--x); } h1 .yy { color: var(--y); }
+.lede { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
+.side { display: grid; gap: 14px; flex: 0 1 280px; min-width: 240px; }
+.progress { font-family: var(--f-mono); font-size: 0.85rem; color: var(--muted); display: grid; gap: 6px; }
+.progress strong { font-family: var(--f-display); font-size: 1.6rem; color: var(--ink); font-weight: 800; }
+.meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; display: flex; }
+.meter > span { display: block; height: 100%; transition: width .3s; }
+
+/* bias switches */
+.scen { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; }
+.scen-h { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.tip-wrap { position: relative; }
+.switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; padding: 3px 0; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.track { width: 36px; height: 20px; border-radius: 10px; background: var(--line); position: relative; flex: none; transition: background .15s; }
+.track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .15s; }
+.switch input:checked + .track { background: var(--ink); }
+.switch input:checked + .track::after { transform: translateX(16px); }
+.switch input:focus-visible + .track { outline: 3px solid var(--x); outline-offset: 2px; }
+.switch .q { margin-left: auto; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--muted); color: var(--muted); font-size: 0.7rem; display: grid; place-items: center; font-family: var(--f-mono); }
+.tip { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; width: min(300px, calc(100vw - 32px)); background: var(--ink); color: var(--bg); font-size: 0.84rem; line-height: 1.45; padding: 10px 12px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.25); opacity: 0; visibility: hidden; transition: opacity .12s; pointer-events: none; }
+.tip-wrap:hover .tip, .tip-wrap:focus-within .tip { opacity: 1; visibility: visible; }
+.scen-note { font-size: 0.75rem; color: var(--muted); }
+.slider { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 0 0 6px 46px; font-size: 0.78rem; color: var(--muted); }
+.slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--ink); margin: 0; }
+.slider output { font-family: var(--f-mono); color: var(--ink); font-weight: 500; }
+.banner { background: var(--warn-bg); color: var(--warn-fg); padding: 10px 14px; border-radius: 8px; font-size: 0.92rem; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+.panel h2 { font-family: var(--f-display); font-weight: 600; font-size: 1.15rem; margin: 0 0 4px; }
+.panel .sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 12px; }
+
+.top { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 820px) { .top, .charts { grid-template-columns: minmax(0, 1fr) !important; } }
+
+/* dice table */
+.rolls { display: grid; gap: 8px; }
+.roll { display: grid; grid-template-columns: 64px auto auto 1fr; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.roll:last-child { border-bottom: 0; }
+.roll .lbl { font-family: var(--f-mono); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.roll .eq { font-family: var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; min-width: 0; }
+.roll .eq b { color: var(--ink); font-weight: 500; }
+.roll .eq small { display: block; font-size: 0.72rem; }
+.die { width: 42px; height: 42px; border-radius: 9px; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 6px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.18); }
+.die.x { background: var(--x); } .die.y { background: var(--y); }
+.die.blank { background: var(--line); box-shadow: none; }
+.die.rr { outline: 2px dashed var(--ink); outline-offset: 2px; }
+.die i { width: 7px; height: 7px; border-radius: 50%; background: var(--pip); place-self: center; visibility: hidden; }
+.die i.on { visibility: visible; }
+.die.tumble { animation: tumble .12s linear infinite; }
+@keyframes tumble { 0% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } 100% { transform: rotate(-8deg); } }
+.totals { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 14px; padding-top: 12px; border-top: 2px solid var(--ink); font-variant-numeric: tabular-nums; }
+.totals div { display: grid; }
+.totals span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.totals b { font-family: var(--f-display); font-size: 1.7rem; font-weight: 800; line-height: 1.1; }
+.totals .tx b { color: var(--x); } .totals .ty b { color: var(--y); } .totals .tt b { color: var(--bar); } .totals .ti b { color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* controls */
+.controls { display: grid; gap: 10px; align-content: start; }
+button { font: inherit; cursor: pointer; border-radius: 8px; padding: 10px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 500; }
+button:hover:not(:disabled) { border-color: var(--muted); }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--x); outline-offset: 2px; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); font-size: 1.05rem; padding: 14px 16px; font-weight: 600; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+.row > button { flex: 1 1 140px; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.9rem; }
+.note { font-size: 0.82rem; color: var(--muted); min-height: 1.2em; }
+.rolls.flash .die { animation: flash .14s ease-out; }
+@keyframes flash { from { transform: scale(1.18); filter: brightness(1.5); } to { transform: none; filter: none; } }
+.bias-check { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 10px; }
+.bias-check h3 { font-family: var(--f-display); font-weight: 600; font-size: 1rem; margin: 0; }
+.metric { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 0.85rem; }
+.metric .name { font-weight: 600; }
+.metric .val { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.metric .sub2 { grid-column: 1 / -1; font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); }
+.sig { font-size: 0.7rem; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--ink); color: var(--ink); font-family: var(--f-body); }
+.sig.no { border-color: var(--line); color: var(--muted); }
+.bias-check p { margin: 0; font-size: 0.88rem; line-height: 1.5; }
+.bias-check sup { font-size: 0.65em; }
+.foot { margin: 0; padding: 8px 0 0 18px; border-top: 1px dashed var(--line); font-size: 0.76rem; color: var(--muted); display: grid; gap: 4px; }
+.foot a { color: var(--x); }
+
+details { border-top: 1px solid var(--line); padding-top: 10px; }
+summary { cursor: pointer; font-weight: 500; }
+
+/* charts */
+.charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+svg.chart { width: 100%; height: auto; display: block; font-family: var(--f-mono); }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 10px; font-family: var(--f-mono); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--ink); font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 14px; height: 10px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+.legend i.dash { background: none; border-top: 2px dashed var(--muted); height: 0; border-radius: 0; }
+.legend i.dot { width: 10px; border-radius: 50%; }
+.legend select { font: inherit; font-size: 0.8rem; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); margin-left: auto; }
+
+/* roster */
+.tablewrap { overflow: auto; max-height: 360px; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--surface); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+td.pairs { text-align: left; font-family: var(--f-mono); color: var(--muted); }
+td.sx { color: var(--x); } td.sy { color: var(--y); } td.tt { color: var(--bar); font-weight: 600; }
+td.g-f { color: var(--fem); } td.g-m { color: var(--bar); }
+td.left { text-align: left; }
+.tag { font-size: 0.7rem; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tag.on { border-color: var(--ink); color: var(--ink); }
+.gapwrap { overflow-x: auto; }
+.gapwrap table { font-size: 0.95rem; }
+.gapwrap td:first-child, .gapwrap th:first-child { text-align: left; }
+tr.g-m td:first-child { color: var(--bar); font-weight: 600; }
+tr.g-f td:first-child { color: var(--fem); font-weight: 600; }
+tr.g-t td:first-child { color: var(--ink); font-weight: 600; }
+tr.g-o td:first-child { color: var(--muted); font-weight: 600; }
+tr.diff td { font-weight: 600; border-top: 2px solid var(--ink); border-bottom: 0; }
+tr.diff td:last-child { font-family: var(--f-display); font-size: 1.35rem; font-weight: 800; }
+
+@media (prefers-reduced-motion: reduce) { .die.tumble { animation: none; } .meter > span, .track, .track::after, .tip { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Five Rolls, Two Dice: <span class="xx">X</span> and <span class="yy">Y</span></h1>
+      <p class="lede">Each student rolls a blue die (X) and a red die (Y) five times. We record the sum of X, the sum of Y, and the total. Students 1–50 are male and 51–100 are female. The histogram shows the total for every student; the scatter plot shows sum of X against sum of Y for all 100 students.</p>
+    </div>
+    <div class="side">
+      <div class="scen" role="group" aria-label="Bias scenarios">
+        <span class="scen-h">Bias scenarios</span>
+        <div class="tip-wrap">
+          <label class="switch" for="tRich"><input type="checkbox" id="tRich" aria-describedby="tipRich"><span class="track"></span>Rich get richer<span class="q" aria-hidden="true">?</span></label>
+          <div class="tip" role="tooltip" id="tipRich">If a student's first roll adds up to more than 10 (an 11 or a 12), then on rolls 2–5 any die that lands on 1, 2 or 3 is rolled again, once. These trust fund kids keep an advantage for the rest of the game.</div>
+        </div>
+        <div class="slider" id="richBox">
+          <label for="sRich">Re-roll dice showing</label><output id="oRich" for="sRich">1–3</output>
+          <input type="range" id="sRich" min="1" max="3" step="1" value="3">
+        </div>
+        <div class="tip-wrap">
+          <label class="switch" for="tGender"><input type="checkbox" id="tGender" aria-describedby="tipGender"><span class="track"></span>Gender penalty<span class="q" aria-hidden="true">?</span></label>
+          <div class="tip" role="tooltip" id="tipGender">Students 1–50 are male and 51–100 are female. Every die value a female student rolls is reduced by 0.5, so her total drops by 5 (10 dice × 0.5). This is a small, systematic bias against one group.</div>
+        </div>
+        <div class="slider" id="genderBox">
+          <label for="sGender">Penalty per female die</label><output id="oGender" for="sGender">−0.5</output>
+          <input type="range" id="sGender" min="0.1" max="1" step="0.1" value="0.5">
+        </div>
+        <div class="tip-wrap">
+          <label class="switch" for="tRate"><input type="checkbox" id="tRate" aria-describedby="tipRate"><span class="track"></span>Compound interest<span class="q" aria-hidden="true">?</span></label>
+          <div class="tip" role="tooltip" id="tipRate">After each roll, a student's savings (running total above 10) earn 20% interest, which is added to the total and earns interest itself on later rolls.</div>
+        </div>
+        <div class="slider" id="rateBox">
+          <label for="sRate">Interest rate per roll</label><output id="oRate" for="sRate">20%</output>
+          <input type="range" id="sRate" min="0.1" max="1" step="0.1" value="0.2">
+        </div>
+        <span class="scen-note">Switches and sliders apply to the next class you roll.</span>
+      </div>
+      <div class="progress">
+        <div><strong id="nDone">0</strong> / 100 students</div>
+        <div class="meter"><span id="meterM" style="background:var(--bar)"></span><span id="meterF" style="background:var(--fem)"></span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner" id="exampleBanner" hidden>This is a simulated example class with no bias, so you can see what the charts look like. Press <b>Roll for 100 students</b> to roll your own class.</div>
+
+  <div class="top">
+    <section class="panel">
+      <h2 id="curTitle">Current student</h2>
+      <p class="sub" id="curSub">Five rolls of two dice</p>
+      <div class="rolls" id="rolls"></div>
+      <div class="totals">
+        <div class="tx"><span>Sum of X</span><b id="sumX">–</b></div>
+        <div class="ty"><span>Sum of Y</span><b id="sumY">–</b></div>
+        <div class="ti" id="intBox" hidden><span>Interest</span><b id="sumI">–</b></div>
+        <div class="ti" id="expBox" hidden><span>Living expenses</span><b id="sumE">–</b></div>
+        <div class="tt"><span id="sumTLabel">Total (X+Y)</span><b id="sumT">–</b></div>
+      </div>
+    </section>
+
+    <section class="panel controls">
+      <h2>Run the game</h2>
+      <button class="primary" id="btnRest">Roll for 100 students</button>
+      <button id="btnNew">Reset to default</button>
+      <div class="note" id="note" aria-live="polite"></div>
+      <div class="bias-check" id="biasCheck"></div>
+    </section>
+  </div>
+
+  <div class="charts">
+    <section class="panel">
+      <h2>Total of the 5 rolls</h2>
+      <p class="sub">X+Y summed over 5 rolls. Male histogram above, female below, on the same scale. Each slice of a column is one student.</p>
+      <div class="legend">
+        <span><i style="background:var(--bar)"></i>Male</span>
+        <span><i style="background:var(--fem)"></i>Female</span>
+        <span><i style="background:radial-gradient(circle, var(--surface) 1.2px, transparent 1.5px) 0 0 / 4px 4px, var(--muted)"></i>Trust fund kids (polka dots)</span>
+        <span id="fairKey"><i class="dash"></i>Expected with fair dice</span>
+      </div>
+      <svg class="chart" id="hist" viewBox="0 0 560 430" role="img" aria-label="Histograms of totals, male above female"></svg>
+      <div class="stats" id="histStats"></div>
+    </section>
+    <section class="panel">
+      <h2>Sum of X vs sum of Y</h2>
+      <p class="sub">Scatter plot, one dot per student, all 100 students</p>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--bar)"></i>Male (1–50)</span>
+        <span><i class="dot" style="background:var(--fem)"></i>Female (51–100)</span>
+        <span id="luckyKey" hidden><i class="dot" style="width:15px;height:15px;background:radial-gradient(circle, var(--surface) 1px, transparent 1.3px) 0 0 / 4px 4px, var(--muted)"></i>Trust fund kids (larger, polka dots)</span>
+        <span><i class="dash"></i>Mean 17.5</span>
+      </div>
+      <svg class="chart" id="scatter" viewBox="0 0 560 340" role="img" aria-label="Scatter plot of sum of X against sum of Y"></svg>
+      <div class="stats" id="scatStats"></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Pareto chart</h2>
+    <p class="sub">Every student ranked from highest total to lowest (bars, left axis), with the share of all points held by the top-ranked students (line, right axis). The more the line bows above the diagonal, the more the head of the class holds and the longer the tail.</p>
+    <div class="legend">
+      <span><i style="background:var(--bar)"></i>Male</span>
+      <span><i style="background:var(--fem)"></i>Female</span>
+      <span><i style="background:radial-gradient(circle, var(--surface) 1.2px, transparent 1.5px) 0 0 / 4px 4px, var(--muted)"></i>Trust fund kids</span>
+      <span><i style="background:var(--ink);height:3px"></i>Cumulative share of points</span>
+      <span><i class="dash"></i>Perfect equality</span>
+    </div>
+    <svg class="chart" id="pdf" viewBox="0 0 1100 420" role="img" aria-label="Pareto chart of student totals"></svg>
+    <div class="stats" id="pdfStats"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Probability density function (PDF) by gender</h2>
+    <p class="sub">Smoothed probability of each total for male and female students (kernel density estimate). The arrow marks the gap between the two group averages; the dashed curve is the unbiased reference, the exact distribution for fair dice with no scenarios.</p>
+    <div class="legend">
+      <span><i style="background:var(--bar)"></i>Male (1–50)</span>
+      <span><i style="background:var(--fem)"></i>Female (51–100)</span>
+      <span><i class="dash"></i>Unbiased reference (fair dice)</span>
+    </div>
+    <svg class="chart" id="pdfG" viewBox="0 0 1100 400" role="img" aria-label="Probability density of totals by gender"></svg>
+    <div class="stats" id="pdfGStats"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Gini coefficient</h2>
+    <p class="sub">Left: the Lorenz curve, the share of all points held by the poorest students, from the bottom up. The Gini coefficient is the shaded gap between the curve and perfect equality, divided by the whole triangle under the diagonal: 0 means everyone has the same total, 1 means one student has everything. Right: the Gini coefficient for the class, for each gender, and for a typical class with fair dice.</p>
+    <div class="legend">
+      <span><i style="background:var(--ink);height:3px"></i>Lorenz curve, whole class</span>
+      <span><i style="background:var(--bar);height:3px"></i>Male</span>
+      <span><i style="background:var(--fem);height:3px"></i>Female</span>
+      <span><i class="dash"></i>Perfect equality</span>
+      <span><i style="background:var(--ink);opacity:.18"></i>Gini area</span>
+    </div>
+    <svg class="chart" id="gini" viewBox="0 0 1100 440" role="img" aria-label="Lorenz curve and Gini coefficients"></svg>
+    <div class="stats" id="giniStats"></div>
+  </section>
+
+  <section class="panel" id="gapPanel" hidden>
+    <h2>Gender gap</h2>
+    <p class="sub">Average sums for each gender over 5 rolls. Difference is male minus female.</p>
+    <div class="gapwrap">
+      <table>
+        <thead><tr><th>Group</th><th>Students</th><th>Avg sum X</th><th>Avg sum Y</th><th>Avg total</th></tr></thead>
+        <tbody id="gapBody"></tbody>
+      </table>
+    </div>
+    <div class="stats" id="gapNote"></div>
+  </section>
+
+  <section class="panel" id="boostPanel" hidden>
+    <h2>Trust fund boost</h2>
+    <p class="sub">Average sums for trust fund kids (first roll 11 or 12, rich get richer on) and everyone else. Difference is trust fund kids minus everyone else.</p>
+    <div class="gapwrap">
+      <table>
+        <thead><tr><th>Group</th><th>Students</th><th>Avg sum X</th><th>Avg sum Y</th><th>Avg total</th></tr></thead>
+        <tbody id="boostBody"></tbody>
+      </table>
+    </div>
+    <div class="stats" id="boostNote"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Class roster</h2>
+    <p class="sub">Every student's rolls, newest first. Pairs are shown as (X, Y) after any penalty; an arrow marks a re-rolled die.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>#</th><th class="left">Gender</th><th style="text-align:left">Rolls (X, Y)</th><th>Sum X</th><th>Sum Y</th><th>Total</th><th class="left">Bias</th></tr></thead>
+        <tbody id="roster"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const TARGET = 100, ROLLS = 5, KEY = "dice-class-v1";
+  const DEFAULTS = { rich: false, gender: false, compound: false, richMax: 3, penalty: 0.5, rate: 0.2 };
+  const SAVE_FLOOR = 10; // only the running total above this counts as savings that earn interest
+  const EXPENSES = 3; // living expenses paid after each roll in the compound interest scenario
+  const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+  const $ = (id) => document.getElementById(id);
+  const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let anim = null;
+
+  let state = { students: [], example: false, ...DEFAULTS };
+
+  // Exact distribution of the sum of 10 fair dice (for the expected-count curve)
+  const P = (() => {
+    let d = [1];
+    for (let k = 0; k < 10; k++) {
+      const nd = new Array(d.length + 6).fill(0);
+      d.forEach((p, s) => { for (let f = 1; f <= 6; f++) nd[s + f] += p / 6; });
+      d = nd;
+    }
+    return d; // index = sum
+  })();
+
+  const d6 = () => 1 + Math.floor(Math.random() * 6);
+  const r1 = (v) => Math.round(v * 10) / 10;
+  const fmt = (v) => { const r = r1(v); return Number.isInteger(r) ? String(r) : r.toFixed(1); };
+  const isFemale = (i) => i >= 50;
+
+  // One student's game. idx is 0-based; the bias switches in effect now are recorded on the student.
+  function rollStudent(idx) {
+    const pen = state.gender && isFemale(idx) ? state.penalty : 0;
+    const rmax = state.richMax;
+    const rolls = [], orig = [];
+    let qual = false;
+    for (let k = 0; k < ROLLS; k++) {
+      let a = d6(), b = d6();
+      const o = [null, null];
+      if (k > 0 && qual) {
+        if (a <= rmax) { o[0] = a; a = d6(); }
+        if (b <= rmax) { o[1] = b; b = d6(); }
+      }
+      if (k === 0 && state.rich && a + b - 2 * pen > 10) qual = true;
+      rolls.push([a, b]); orig.push(o);
+    }
+    // compound interest: after each roll, living expenses are paid (never below 0), then savings above the floor earn interest that joins the balance
+    const rate = state.compound ? state.rate : 0;
+    const ints = [], exps = [];
+    if (rate) {
+      let bal = 0;
+      rolls.forEach(([a, b]) => {
+        bal += a + b - 2 * pen;
+        const e = Math.min(EXPENSES, bal); exps.push(e); bal -= e;
+        const i = Math.max(0, bal - SAVE_FLOOR) * rate; ints.push(i); bal += i;
+      });
+    }
+    return { rolls, orig, qual, rich: state.rich, rmax, pen, rate, ints, exps, src: "sim", jx: Math.random() - 0.5, jy: Math.random() - 0.5 };
+  }
+  const faceList = (k) => ["1", "1 or 2", "1, 2 or 3"][k - 1];
+  const faceRange = (k) => (k === 1 ? "1" : "1–" + k);
+  // expected points gained per die on rolls 2–5 when faces 1..k are re-rolled once
+  const rerollGain = (k) => (k / 6) * (3.5 - (k + 1) / 2);
+  function fairStudent() {
+    return { rolls: Array.from({ length: ROLLS }, () => [d6(), d6()]), orig: null, qual: false, rich: false, pen: 0, src: "sim", jx: Math.random() - 0.5, jy: Math.random() - 0.5 };
+  }
+  const sums = (s) => {
+    const pen = s.pen || 0;
+    let x = 0, y = 0;
+    s.rolls.forEach(([a, b]) => { x += a - pen; y += b - pen; });
+    const i = (s.ints || []).reduce((p, v) => p + v, 0), e = (s.exps || []).reduce((p, v) => p + v, 0);
+    return { x: r1(x), y: r1(y), i: Math.round(i * 100) / 100, e: r1(e), t: r1(x + y + i - e) };
+  };
+  const fmt2 = (v) => (Math.round(v * 100) / 100).toFixed(2);
+  const rerolled = (s, k, j) => s.orig && s.orig[k] && s.orig[k][j] != null;
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) { const s = JSON.parse(raw); if (Array.isArray(s.students)) return Object.assign({ ...DEFAULTS }, s); }
+    } catch (e) {}
+    return null;
+  }
+
+  // ---------- dice table ----------
+  function dieHTML(v, cls) {
+    let h = '<div class="die ' + cls + (v ? "" : " blank") + '" aria-label="' + (v ? v : "not rolled") + '">';
+    for (let i = 0; i < 9; i++) h += '<i class="' + (v && PIPS[v].includes(i) ? "on" : "") + '"></i>';
+    return h + "</div>";
+  }
+  function drawRolls(s, shown, tumbling) {
+    const rolls = s ? s.rolls : [], pen = s ? s.pen || 0 : 0, ints = (s && s.ints) || [], exps = (s && s.exps) || [];
+    let h = "", bal = 0;
+    for (let k = 0; k < ROLLS; k++) {
+      const r = k < shown ? rolls[k] : null;
+      const tumble = tumbling === k;
+      const a = tumble ? d6() : r ? r[0] : 0, b = tumble ? d6() : r ? r[1] : 0;
+      const rx = !tumble && r && rerolled(s, k, 0), ry = !tumble && r && rerolled(s, k, 1);
+      let eq = "";
+      if (r && !tumble) {
+        eq = fmt(r[0] - pen) + " + " + fmt(r[1] - pen) + " = <b>" + fmt(r[0] + r[1] - 2 * pen) + "</b>";
+        const notes = [];
+        if (rx) notes.push("X re-rolled from " + s.orig[k][0]);
+        if (ry) notes.push("Y re-rolled from " + s.orig[k][1]);
+        if (pen) notes.push("−" + pen + " per die");
+        if (ints.length) {
+          bal += r[0] + r[1] - 2 * pen;
+          if (exps.length) { notes.push("−" + fmt(exps[k]) + " living expenses"); bal -= exps[k]; }
+          notes.push("+" + fmt2(ints[k]) + " interest on savings " + fmt2(Math.max(0, bal - SAVE_FLOOR)));
+          bal += ints[k];
+        }
+        if (notes.length) eq += "<small>" + notes.join(" · ") + "</small>";
+      }
+      h += '<div class="roll"><span class="lbl">Roll ' + (k + 1) + "</span>" +
+        dieHTML(a, "x" + (tumble ? " tumble" : "") + (rx ? " rr" : "")) + dieHTML(b, "y" + (tumble ? " tumble" : "") + (ry ? " rr" : "")) +
+        '<span class="eq">' + eq + "</span></div>";
+    }
+    $("rolls").innerHTML = h;
+    let sx = 0, sy = 0;
+    for (let k = 0; k < shown && !(tumbling === k); k++) { sx += rolls[k][0] - pen; sy += rolls[k][1] - pen; }
+    const any = shown > 0 && !(shown === 1 && tumbling === 0);
+    $("sumX").textContent = any ? fmt(sx) : "–";
+    $("sumY").textContent = any ? fmt(sy) : "–";
+    const si = ints.slice(0, shown).reduce((p, v) => p + v, 0), se = exps.slice(0, shown).reduce((p, v) => p + v, 0);
+    $("intBox").hidden = !ints.length;
+    $("expBox").hidden = !exps.length;
+    $("sumI").textContent = any ? "+" + fmt2(si) : "–";
+    $("sumE").textContent = any ? "−" + fmt(se) : "–";
+    $("sumTLabel").textContent = exps.length ? "Total (X+Y+interest−expenses)" : ints.length ? "Total (X+Y+interest)" : "Total (X+Y)";
+    $("sumT").textContent = any ? fmt(sx + sy + si - se) : "–";
+  }
+  function describe(s, n) {
+    const bits = [isFemale(n - 1) ? "Female" : "Male"];
+    if (s.rich) bits.push(s.qual ? "rich get richer: trust fund kid, dice showing " + faceList(s.rmax || 3) + " re-rolled" : "rich get richer: first roll was 10 or less, no re-rolls");
+    if (s.pen) bits.push("gender penalty −" + s.pen + " per die");
+    if (s.rate) bits.push("compound interest " + Math.round(s.rate * 100) + "%: +" + fmt2(sums(s).i) + (s.exps ? ", living expenses −" + fmt(sums(s).e) : ""));
+    return bits.join(" · ");
+  }
+  function showLatest() {
+    const n = state.students.length;
+    if (!n) { $("curTitle").textContent = "Waiting for student 1"; $("curSub").textContent = "Press Roll for 100 students to roll a class"; drawRolls(null, 0); return; }
+    const s = state.students[n - 1];
+    $("curTitle").textContent = "Student " + n;
+    $("curSub").textContent = describe(s, n);
+    drawRolls(s, ROLLS);
+  }
+
+  // ---------- charts ----------
+  function niceScale(max, maxTicks) {
+    const steps = [1, 2, 5, 10, 20, 25, 50];
+    for (const st of steps) { const top = Math.ceil(max / st) * st; if (top / st <= maxTicks) return { top: Math.max(top, st), step: st }; }
+    return { top: max, step: max };
+  }
+  function txt(x, y, s, anchor, extra) {
+    return '<text x="' + x + '" y="' + y + '" text-anchor="' + (anchor || "middle") + '" fill="var(--muted)" font-size="12" ' + (extra || "") + ">" + s + "</text>";
+  }
+  const mean = (a) => a.reduce((p, v) => p + v, 0) / a.length;
+
+  function drawHist() {
+    // Two panels on one shared x and y scale: male on top, female below. Each student is one slice of a column.
+    const W = 560, H = 430, l = 46, r = 14, ph = 150;
+    const panels = [{ f: false, top: 26, label: "Male (1–50)", col: "var(--bar)", pat: "dotsM" },
+                    { f: true, top: 230, label: "Female (51–100)", col: "var(--fem)", pat: "dotsF" }];
+    const pw = W - l - r;
+    const totals = state.students.map((s) => sums(s).t);
+    const n = totals.length;
+    // fair dice fit 6–62 in 2-point bins; compound interest can push totals far higher, so widen the range and bins
+    const top = Math.max(62, n ? Math.max(...totals) + 1 : 0);
+    const bw = top <= 62 ? 2 : [5, 10, 20, 25, 50, 100].find((w) => top / w <= 30) || 200;
+    const lo = bw === 2 ? Math.min(6, n ? Math.floor(Math.min(...totals) / 2) * 2 : 6) : 0, hi = lo + Math.ceil((top - lo) / bw) * bw, nb = (hi - lo) / bw;
+    const tickStep = [10, 20, 25, 50, 100, 200, 500].find((st) => (hi - lo) / st <= 7);
+    const cx = (v) => (bw === 2 ? v + 0.5 : v); // with 2-point bins, center each tick on its integer
+    const hasInt = state.students.some((s) => s.rate);
+    $("fairKey").hidden = hasInt;
+    const binOf = (t) => Math.max(0, Math.min(nb - 1, Math.floor((t - lo) / bw)));
+    panels.forEach((p) => {
+      p.bins = Array.from({ length: nb }, () => []);
+      state.students.forEach((s, i) => { if (isFemale(i) === p.f) p.bins[binOf(totals[i])].push(i); });
+      p.n = p.bins.reduce((a, b) => a + b.length, 0);
+      p.exp = Array.from({ length: nb }, (_, k) => { let q = 0; for (let v = lo + k * bw; v < lo + (k + 1) * bw; v++) q += P[v] || 0; return p.n * q; });
+    });
+    // with interest the fair-dice curve no longer describes the totals, so it is left out
+    const peak = Math.max(1, ...panels.flatMap((p) => p.bins.map((b) => b.length)), ...(hasInt ? [] : panels.flatMap((p) => p.exp)));
+    const ys = niceScale(peak, 4);
+    const X = (v) => l + ((v - lo) / (hi - lo)) * pw;
+    const dotPat = (id, col) => '<pattern id="' + id + '" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="' + col +
+      '"/><circle cx="1.5" cy="1.5" r="1.2" fill="var(--surface)"/><circle cx="4.5" cy="4.5" r="1.2" fill="var(--surface)"/></pattern>';
+    let g = "<defs>" + dotPat("dotsM", "var(--bar)") + dotPat("dotsF", "var(--fem)") + "</defs>";
+    panels.forEach((p) => {
+      const Y = (v) => p.top + ph - (v / ys.top) * ph;
+      const base = Y(0);
+      const tm = p.n ? mean(p.bins.flat().map((i) => totals[i])) : null;
+      g += '<text x="' + l + '" y="' + (p.top - 10) + '" fill="' + p.col + '" font-size="13" font-weight="600">' + p.label +
+        '<tspan fill="var(--muted)" font-weight="400">' + (p.n ? "  n " + p.n + " · mean " + tm.toFixed(2) : "") + "</tspan></text>";
+      for (let v = 0; v <= ys.top; v += ys.step) {
+        g += '<line x1="' + l + '" x2="' + (W - r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="var(--line)" stroke-width="1"/>';
+        g += txt(l - 8, Y(v) + 4, v, "end");
+      }
+      p.bins.forEach((ids, k) => {
+        const b = lo + k * bw, x0 = X(b) + 1, w = X(b + bw) - X(b) - 2;
+        ids.forEach((i, j) => {
+          const s = state.students[i];
+          g += '<rect x="' + x0.toFixed(1) + '" y="' + Y(j + 1).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + (Y(j) - Y(j + 1)).toFixed(1) +
+            '" fill="' + (s.qual ? "url(#" + p.pat + ")" : p.col) + '" stroke="var(--surface)" stroke-width="1"><title>Student ' + (i + 1) + ": total " + fmt(totals[i]) +
+            (s.qual ? " (trust fund kid)" : "") + "</title></rect>";
+        });
+      });
+      if (p.n && !hasInt) {
+        const pts = p.exp.map((e, k) => X(lo + k * bw + bw / 2).toFixed(1) + "," + Y(e).toFixed(1)).join(" ");
+        g += '<polyline points="' + pts + '" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4"/>';
+      } else if (!p.n) {
+        g += txt(l + pw / 2, p.top + ph / 2, p.f ? "No female students yet (students 51–100)" : "No students yet", "middle", 'font-size="13"');
+      }
+      g += '<line x1="' + l + '" x2="' + (W - r) + '" y1="' + base + '" y2="' + base + '" stroke="var(--ink)" stroke-width="1.5"/>';
+      for (let v = Math.ceil(Math.max(lo, 1) / tickStep) * tickStep; v <= hi - (bw === 2 ? 2 : 0); v += tickStep) {
+        g += '<line x1="' + X(cx(v)) + '" x2="' + X(cx(v)) + '" y1="' + base + '" y2="' + (base + 5) + '" stroke="var(--ink)"/>';
+        g += txt(X(cx(v)), base + 18, v);
+      }
+      g += txt(14, p.top + ph / 2, "Students", "middle", 'transform="rotate(-90 14 ' + (p.top + ph / 2) + ')"');
+    });
+    g += txt(l + pw / 2, H - 6, "Total of 10 dice (5 rolls × 2 dice)" + (hasInt ? " plus interest" : ""));
+    $("hist").innerHTML = g;
+
+    if (n) {
+      const mu = mean(totals);
+      const sd = n > 1 ? Math.sqrt(totals.reduce((a, b) => a + (b - mu) ** 2, 0) / (n - 1)) : 0;
+      const tm = totals.slice(0, 50), tf = totals.slice(50);
+      let h = "<span>n <b>" + n + "</b></span><span>mean <b>" + mu.toFixed(2) + "</b> (fair 35)</span><span>SD <b>" +
+        sd.toFixed(2) + "</b> (fair 5.40)</span><span>range <b>" + fmt(Math.min(...totals)) + "–" + fmt(Math.max(...totals)) + "</b></span>";
+      if (tf.length) h += "<span>male mean <b>" + mean(tm).toFixed(2) + "</b></span><span>female mean <b>" + mean(tf).toFixed(2) + "</b></span>";
+      $("histStats").innerHTML = h;
+    } else $("histStats").innerHTML = "<span>With fair dice: mean 35, SD 5.40</span>";
+  }
+
+  // ---------- PDF by gender ----------
+  // Gaussian kernel density estimate with Silverman's rule-of-thumb bandwidth
+  function kde(vals) {
+    const n = vals.length, mu = mean(vals);
+    const sd = Math.sqrt(vals.reduce((a, v) => a + (v - mu) ** 2, 0) / Math.max(1, n - 1)) || 1;
+    const h = 1.06 * sd * Math.pow(n, -0.2);
+    const k = 1 / (n * h * Math.sqrt(2 * Math.PI));
+    return { mu, f: (x) => k * vals.reduce((a, v) => a + Math.exp(-0.5 * ((x - v) / h) ** 2), 0) };
+  }
+  function drawPdfGender() {
+    const W = 1100, H = 400, m = { l: 70, r: 20, t: 34, b: 50 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const totals = state.students.map((s) => sums(s).t);
+    const groups = [
+      { label: "Male", vals: totals.filter((_, i) => !isFemale(i)), col: "var(--bar)" },
+      { label: "Female", vals: totals.filter((_, i) => isFemale(i)), col: "var(--fem)" },
+    ].filter((gr) => gr.vals.length > 1);
+    groups.forEach((gr) => (gr.k = kde(gr.vals)));
+    const all = groups.flatMap((gr) => gr.vals);
+    let lo = Math.min(8, ...all) - 4, hi = Math.max(62, ...all) + 4;
+    lo = Math.max(0, Math.floor(lo / 5) * 5); hi = Math.ceil(hi / 5) * 5;
+    const N = 300, xs = Array.from({ length: N + 1 }, (_, i) => lo + ((hi - lo) * i) / N);
+    groups.forEach((gr) => (gr.ys = xs.map(gr.k.f)));
+    // unbiased reference: exact fair-dice probabilities, which are densities per 1 point of total
+    const ref = []; for (let s = 10; s <= 60; s++) ref.push([s, P[s]]);
+    const yMax = Math.max(...ref.map((p) => p[1]), ...groups.flatMap((gr) => gr.ys)) * 1.12;
+    const X = (v) => m.l + ((v - lo) / (hi - lo)) * pw;
+    const Y = (v) => m.t + ph - (v / yMax) * ph;
+    const yStep = [0.005, 0.01, 0.02, 0.025, 0.05, 0.1].find((s) => yMax / s <= 6) || 0.2;
+    const xStep = [5, 10, 20, 25, 50, 100].find((s) => (hi - lo) / s <= 12);
+    let g = "";
+    for (let v = 0; v <= yMax; v += yStep) {
+      g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="var(--line)"/>';
+      g += txt(m.l - 8, Y(v) + 4, (v * 100).toFixed(yStep < 0.01 ? 1 : 0) + "%", "end");
+    }
+    for (let v = Math.ceil(lo / xStep) * xStep; v <= hi; v += xStep) {
+      g += '<line x1="' + X(v).toFixed(1) + '" x2="' + X(v).toFixed(1) + '" y1="' + Y(0) + '" y2="' + (Y(0) + 5) + '" stroke="var(--ink)"/>';
+      g += txt(X(v), Y(0) + 20, v);
+    }
+    groups.forEach((gr) => {
+      const pts = xs.map((x, i) => X(x).toFixed(1) + "," + Y(gr.ys[i]).toFixed(1)).join(" ");
+      g += '<polygon points="' + X(lo).toFixed(1) + "," + Y(0) + " " + pts + " " + X(hi).toFixed(1) + "," + Y(0) + '" fill="' + gr.col + '" fill-opacity="0.18"/>';
+      g += '<polyline points="' + pts + '" fill="none" stroke="' + gr.col + '" stroke-width="3" stroke-linejoin="round"/>';
+    });
+    g += '<polyline points="' + ref.map(([s, p]) => X(s).toFixed(1) + "," + Y(p).toFixed(1)).join(" ") + '" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6 5"/>';
+    // arrow between the two group means, above the curves, with dotted drop lines to each mean
+    if (groups.length === 2) {
+      const [ma, fe] = groups;
+      const ya = m.t - 12;
+      const x1 = X(ma.k.mu), x2 = X(fe.k.mu), gap = ma.k.mu - fe.k.mu;
+      g += '<line x1="' + x1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y1="' + ya + '" y2="' + ya + '" stroke="var(--ink)" stroke-width="2"/>';
+      [[x1, x2, ma.col], [x2, x1, fe.col]].forEach(([x, other, col]) => {
+        g += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + ya + '" y2="' + Y(0) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="3 3"/>';
+        if (Math.abs(other - x) > 16) {
+          const dir = other > x ? 1 : -1; // arrowhead points outward, away from the other mean
+          g += '<path d="M' + x.toFixed(1) + " " + ya + " l" + (dir * 8) + " -5 l0 10 z" + '" fill="var(--ink)"/>';
+        }
+      });
+      g += '<text x="' + ((x1 + x2) / 2).toFixed(1) + '" y="' + (ya - 8) + '" text-anchor="middle" fill="var(--ink)" stroke="var(--surface)" stroke-width="4" paint-order="stroke" font-size="13" font-weight="600">Gender gap ' +
+        (gap >= 0 ? "+" : "") + gap.toFixed(2) + "</text>";
+    }
+    if (!groups.length) g += txt(m.l + pw / 2, m.t + ph / 2, "No students yet", "middle", 'font-size="15"');
+    g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(0) + '" y2="' + Y(0) + '" stroke="var(--ink)" stroke-width="1.5"/>';
+    g += txt(m.l + pw / 2, H - 8, "Total per student");
+    g += txt(18, m.t + ph / 2, "Probability density", "middle", 'transform="rotate(-90 18 ' + (m.t + ph / 2) + ')"');
+    $("pdfG").innerHTML = g;
+    $("pdfGStats").innerHTML = groups.map((gr) => "<span>" + gr.label.toLowerCase() + " mean <b>" + gr.k.mu.toFixed(2) + "</b> (" + (gr.k.mu - 35 >= 0 ? "+" : "") +
+      (gr.k.mu - 35).toFixed(2) + " vs unbiased)</span>").join("") + "<span>unbiased mean <b>35</b>, SD <b>5.40</b></span>";
+  }
+
+  // Gini coefficient: 0 when everyone has the same total, closer to 1 the more the top holds
+  function giniOf(vals) {
+    const asc = vals.slice().sort((a, b) => a - b), n = asc.length, sum = asc.reduce((a, v) => a + v, 0);
+    if (n < 2 || !sum) return 0;
+    return (2 * asc.reduce((a, v, i) => a + (i + 1) * v, 0)) / (n * sum) - (n + 1) / n;
+  }
+  // average Gini of a class of 100 with fair dice, from 300 simulated classes
+  const FAIR_GINI = (() => {
+    let g = 0;
+    for (let c = 0; c < 300; c++) g += giniOf(Array.from({ length: TARGET }, () => { let t = 0; for (let d = 0; d < 10; d++) t += d6(); return t; }));
+    return g / 300;
+  })();
+
+  function drawGini() {
+    const W = 1100, H = 440;
+    // Lorenz square on the left, Gini bars on the right
+    const L = { x: 70, y: 20, s: 370 };
+    const B = { l: 560, r: 1080, t: 30, b: 390 };
+    const totals = state.students.map((s) => sums(s).t);
+    const n = totals.length;
+    const lorenz = (vals) => {
+      const asc = vals.slice().sort((a, b) => a - b), sum = asc.reduce((a, v) => a + v, 0);
+      let run = 0;
+      return [[0, 0]].concat(asc.map((v, i) => [(i + 1) / asc.length, (run += v) / sum]));
+    };
+    const LX = (p) => L.x + p * L.s, LY = (p) => L.y + L.s - p * L.s;
+    const pts = (cur) => cur.map(([a, b]) => LX(a).toFixed(1) + "," + LY(b).toFixed(1)).join(" ");
+    let g = "";
+    for (let p = 0; p <= 1.0001; p += 0.2) {
+      g += '<line x1="' + LX(p) + '" x2="' + LX(p) + '" y1="' + LY(0) + '" y2="' + LY(1) + '" stroke="var(--line)"/>';
+      g += '<line x1="' + LX(0) + '" x2="' + LX(1) + '" y1="' + LY(p) + '" y2="' + LY(p) + '" stroke="var(--line)"/>';
+      g += txt(LX(p), LY(0) + 18, Math.round(p * 100) + "%");
+      g += txt(LX(0) - 8, LY(p) + 4, Math.round(p * 100) + "%", "end");
+    }
+    const groups = [
+      { label: "Whole class", vals: totals, col: "var(--ink)", w: 3 },
+      { label: "Male", vals: totals.filter((_, i) => !isFemale(i)), col: "var(--bar)", w: 2 },
+      { label: "Female", vals: totals.filter((_, i) => isFemale(i)), col: "var(--fem)", w: 2 },
+    ];
+    if (n > 1) {
+      const cls = lorenz(totals);
+      g += '<polygon points="' + LX(0) + "," + LY(0) + " " + LX(1) + "," + LY(1) + " " + pts(cls.slice().reverse()) + '" fill="var(--ink)" fill-opacity="0.15"/>';
+      groups.slice(1).forEach((gr) => { if (gr.vals.length > 1) g += '<polyline points="' + pts(lorenz(gr.vals)) + '" fill="none" stroke="' + gr.col + '" stroke-width="' + gr.w + '"/>'; });
+      g += '<polyline points="' + pts(cls) + '" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>';
+    } else g += txt(LX(0.5), LY(0.55), "No students yet", "middle", 'font-size="14"');
+    g += '<line x1="' + LX(0) + '" y1="' + LY(0) + '" x2="' + LX(1) + '" y2="' + LY(1) + '" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6 5"/>';
+    g += '<rect x="' + LX(0) + '" y="' + LY(1) + '" width="' + L.s + '" height="' + L.s + '" fill="none" stroke="var(--ink)" stroke-width="1.5"/>';
+    g += txt(LX(0.5), H - 10, "Share of students, poorest first");
+    g += txt(16, LY(0.5), "Share of all points", "middle", 'transform="rotate(-90 16 ' + LY(0.5) + ')"');
+
+    // Gini bars
+    const bars = groups.map((gr) => ({ label: gr.label, col: gr.col, v: gr.vals.length > 1 ? giniOf(gr.vals) : null }))
+      .concat([{ label: "Fair dice", col: "var(--muted)", v: FAIR_GINI, ref: true }]);
+    const gMax = Math.max(0.2, ...bars.map((b) => b.v || 0));
+    const gTop = Math.ceil(gMax * 10) / 10;
+    const BY = (v) => B.b - (v / gTop) * (B.b - B.t);
+    const slot = (B.r - B.l) / bars.length;
+    for (let v = 0; v <= gTop + 1e-9; v += gTop > 0.4 ? 0.1 : 0.05) {
+      g += '<line x1="' + B.l + '" x2="' + B.r + '" y1="' + BY(v).toFixed(1) + '" y2="' + BY(v).toFixed(1) + '" stroke="var(--line)"/>';
+      g += txt(B.l - 8, BY(v) + 4, v.toFixed(2), "end");
+    }
+    bars.forEach((b, k) => {
+      const x = B.l + k * slot + slot * 0.18, w = slot * 0.64;
+      if (b.v != null) {
+        g += '<rect x="' + x.toFixed(1) + '" y="' + BY(b.v).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + (B.b - BY(b.v)).toFixed(1) + '" fill="' + b.col + '"' +
+          (b.ref ? ' fill-opacity="0.35" stroke="var(--muted)" stroke-dasharray="5 4"' : "") + "><title>" + b.label + ": Gini " + b.v.toFixed(3) + "</title></rect>";
+        g += '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (BY(b.v) - 8).toFixed(1) + '" text-anchor="middle" fill="var(--ink)" font-size="15" font-weight="600">' + b.v.toFixed(3) + "</text>";
+      }
+      g += txt(x + w / 2, B.b + 20, b.label);
+    });
+    g += '<line x1="' + B.l + '" x2="' + B.r + '" y1="' + B.b + '" y2="' + B.b + '" stroke="var(--ink)" stroke-width="1.5"/>';
+    g += txt((B.l + B.r) / 2, H - 10, "Gini coefficient (0 = everyone equal)");
+    $("gini").innerHTML = g;
+
+    if (n > 1) {
+      const gc = giniOf(totals);
+      $("giniStats").innerHTML = "<span>class Gini <b>" + gc.toFixed(3) + "</b></span><span>fair-dice class <b>" + FAIR_GINI.toFixed(3) + "</b></span><span>this class is <b>" +
+        (gc / FAIR_GINI).toFixed(1) + "×</b> as unequal as a typical fair class</span><span>bottom half hold <b>" + (lorenz(totals)[Math.floor(n / 2)][1] * 100).toFixed(1) + "%</b> of all points</span>";
+    } else $("giniStats").innerHTML = "<span>A typical fair-dice class has a Gini of <b>" + FAIR_GINI.toFixed(3) + "</b>.</span>";
+  }
+
+  // ---------- Pareto chart ----------
+  // Students ranked from highest total to lowest, with the running share of all points held by the top-ranked students.
+  // The share line is concave: the more it bows toward the top left, the more the head of the class holds.
+  function drawPareto() {
+    const W = 1100, H = 420, m = { l: 64, r: 64, t: 20, b: 52 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const ranked = state.students.map((s, i) => ({ s, i, t: sums(s).t })).sort((a, b) => b.t - a.t);
+    const n = ranked.length;
+    const sum = ranked.reduce((a, o) => a + o.t, 0);
+    let run = 0;
+    const cum = ranked.map((o) => (run += o.t) / sum);
+    const maxT = n ? ranked[0].t : 60;
+    const yStep = [5, 10, 20, 25, 50, 100, 200, 250, 500, 1000].find((s) => Math.ceil(maxT / s) <= 6);
+    const ys = { step: yStep, top: Math.ceil(maxT / yStep) * yStep };
+    const bw = pw / TARGET;
+    const X = (k) => m.l + k * bw; // left edge of rank k (0-based)
+    const Y = (v) => m.t + ph - (v / ys.top) * ph;
+    const Yc = (p) => m.t + ph - p * ph;
+    const dotPat = (id, col) => '<pattern id="' + id + '" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="' + col +
+      '"/><circle cx="1.5" cy="1.5" r="1.2" fill="var(--surface)"/><circle cx="4.5" cy="4.5" r="1.2" fill="var(--surface)"/></pattern>';
+    let g = "<defs>" + dotPat("pdotsM", "var(--bar)") + dotPat("pdotsF", "var(--fem)") + "</defs>";
+    for (let v = 0; v <= ys.top; v += ys.step) {
+      g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="var(--line)"/>';
+      g += txt(m.l - 8, Y(v) + 4, v, "end");
+    }
+    for (let p = 0; p <= 1.0001; p += 0.2) g += txt(W - m.r + 8, Yc(p) + 4, Math.round(p * 100) + "%", "start");
+    ranked.forEach((o, k) => {
+      const f = isFemale(o.i);
+      const fill = o.s.qual ? "url(#" + (f ? "pdotsF" : "pdotsM") + ")" : f ? "var(--fem)" : "var(--bar)";
+      g += '<rect x="' + (X(k) + 0.5).toFixed(1) + '" y="' + Y(o.t).toFixed(1) + '" width="' + Math.max(1, bw - 1).toFixed(1) + '" height="' + (Y(0) - Y(o.t)).toFixed(1) +
+        '" fill="' + fill + '"><title>Rank ' + (k + 1) + ": student " + (o.i + 1) + " (" + (f ? "female" : "male") + (o.s.qual ? ", trust fund kid" : "") + "), total " + fmt(o.t) +
+        "; top " + (k + 1) + " hold " + (cum[k] * 100).toFixed(1) + "% of all points</title></rect>";
+    });
+    // perfect equality: every student holds the same share, so the top k hold k%
+    g += '<line x1="' + m.l + '" y1="' + Yc(0) + '" x2="' + X(TARGET) + '" y2="' + Yc(1) + '" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6 5"/>';
+    if (n) {
+      g += '<polyline points="' + m.l + "," + Yc(0) + " " + cum.map((p, k) => X(k + 1).toFixed(1) + "," + Yc(p).toFixed(1)).join(" ") +
+        '" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>';
+      [10, 20].forEach((k) => {
+        if (k > n) return;
+        const p = cum[k - 1];
+        g += '<circle cx="' + X(k).toFixed(1) + '" cy="' + Yc(p).toFixed(1) + '" r="5" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>';
+        g += '<text x="' + (X(k) + 8).toFixed(1) + '" y="' + (Yc(p) - 8).toFixed(1) + '" fill="var(--ink)" stroke="var(--surface)" stroke-width="4" paint-order="stroke" font-size="13" font-weight="600">Top ' + k + " hold " + (p * 100).toFixed(1) + "%</text>";
+      });
+    } else g += txt(m.l + pw / 2, m.t + ph / 2, "No students yet", "middle", 'font-size="15"');
+    for (let k = 1; k <= TARGET; k++) if (k === 1 || k % 10 === 0) g += txt(X(k - 0.5), m.t + ph + 18, k);
+    g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(0) + '" y2="' + Y(0) + '" stroke="var(--ink)" stroke-width="1.5"/>';
+    g += txt(m.l + pw / 2, H - 8, "Students ranked from highest total to lowest");
+    g += txt(18, m.t + ph / 2, "Total", "middle", 'transform="rotate(-90 18 ' + (m.t + ph / 2) + ')"');
+    g += txt(W - 14, m.t + ph / 2, "Share of all points held by the top-ranked students", "middle", 'transform="rotate(90 ' + (W - 14) + " " + (m.t + ph / 2) + ')"');
+    $("pdf").innerHTML = g;
+
+    if (!n) { $("pdfStats").innerHTML = "<span>With fair dice the share line sits almost on the equality diagonal.</span>"; return; }
+    // Gini coefficient: 0 when everyone has the same total, closer to 1 the more the top holds
+    const gini = giniOf(ranked.map((o) => o.t));
+    const share = (q) => cum[Math.max(0, Math.round(n * q) - 1)] * 100;
+    $("pdfStats").innerHTML = "<span>top 10% hold <b>" + share(0.1).toFixed(1) + "%</b></span><span>top 20% hold <b>" + share(0.2).toFixed(1) + "%</b></span>" +
+      "<span>bottom 50% hold <b>" + (100 - share(0.5)).toFixed(1) + "%</b></span><span>Gini coefficient <b>" + gini.toFixed(3) + "</b> (0 = everyone equal)</span>" +
+      "<span>highest <b>" + fmt(ranked[0].t) + "</b>, lowest <b>" + fmt(ranked[n - 1].t) + "</b></span>";
+  }
+
+  function drawScatter() {
+    const W = 560, H = 340, m = { l: 46, r: 14, t: 14, b: 50 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const lo = 3, hi = 31;
+    const X = (v) => m.l + ((v - lo) / (hi - lo)) * pw;
+    const Y = (v) => m.t + ph - ((v - lo) / (hi - lo)) * ph;
+    // lucky (rich-get-richer qualified) students drawn last so their larger dots stay visible
+    const pts = state.students.map((s, i) => ({ ...sums(s), jx: s.jx, jy: s.jy, i, lucky: !!s.qual })).sort((a, b) => a.lucky - b.lucky);
+    $("luckyKey").hidden = !pts.some((p) => p.lucky);
+    const dotPat = (id, col) => '<pattern id="' + id + '" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="4" fill="' + col +
+      '"/><circle cx="1" cy="1" r="0.9" fill="var(--surface)"/><circle cx="3" cy="3" r="0.9" fill="var(--surface)"/></pattern>';
+    let g = "<defs>" + dotPat("sdotsM", "var(--bar)") + dotPat("sdotsF", "var(--fem)") + "</defs>";
+    for (let v = 5; v <= 30; v += 5) {
+      g += '<line x1="' + X(v) + '" x2="' + X(v) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '" stroke="var(--line)"/>';
+      g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="var(--line)"/>';
+      g += txt(X(v), m.t + ph + 19, v);
+      g += txt(m.l - 8, Y(v) + 4, v, "end");
+    }
+    g += '<line x1="' + X(17.5) + '" x2="' + X(17.5) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '" stroke="var(--muted)" stroke-dasharray="5 4" stroke-width="1.5"/>';
+    g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(17.5) + '" y2="' + Y(17.5) + '" stroke="var(--muted)" stroke-dasharray="5 4" stroke-width="1.5"/>';
+    g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + (m.t + ph) + '" y2="' + (m.t + ph) + '" stroke="var(--ink)" stroke-width="1.5"/>';
+    g += '<line x1="' + m.l + '" x2="' + m.l + '" y1="' + m.t + '" y2="' + (m.t + ph) + '" stroke="var(--ink)" stroke-width="1.5"/>';
+    pts.forEach((p) => {
+      const cx = X(p.x + p.jx * 0.35), cy = Y(p.y + p.jy * 0.35);
+      const col = isFemale(p.i) ? "var(--fem)" : "var(--bar)";
+      g += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + (p.lucky ? 7.5 : 5) + '" fill="' + (p.lucky ? "url(#s" + (isFemale(p.i) ? "dotsF" : "dotsM") + ")" : col) + '" fill-opacity="' + (p.lucky ? 1 : 0.75) + '" stroke="var(--surface)" stroke-width="1"><title>Student ' + (p.i + 1) + " (" + (isFemale(p.i) ? "female" : "male") + (p.lucky ? ", trust fund kid" : "") + "): X=" + fmt(p.x) + ", Y=" + fmt(p.y) + "</title></circle>";
+    });
+    if (!pts.length) g += txt(m.l + pw / 2, m.t + ph / 2 - 20, "No students yet", "middle", 'font-size="14"');
+    g += '<text x="' + (m.l + pw / 2) + '" y="' + (H - 6) + '" text-anchor="middle" fill="var(--x)" font-size="12" font-weight="500">Sum of X (blue die, 5 rolls)</text>';
+    g += '<text x="14" y="' + (m.t + ph / 2) + '" text-anchor="middle" fill="var(--y)" font-size="12" font-weight="500" transform="rotate(-90 14 ' + (m.t + ph / 2) + ')">Sum of Y (red die)</text>';
+    $("scatter").innerHTML = g;
+
+    const n = pts.length;
+    if (n > 1) {
+      const mx = mean(pts.map((p) => p.x)), my = mean(pts.map((p) => p.y));
+      let sxy = 0, sxx = 0, syy = 0;
+      pts.forEach((p) => { sxy += (p.x - mx) * (p.y - my); sxx += (p.x - mx) ** 2; syy += (p.y - my) ** 2; });
+      const r = sxx && syy ? sxy / Math.sqrt(sxx * syy) : 0;
+      $("scatStats").innerHTML = "<span>observations <b>" + n + "</b> / " + TARGET + "</span><span>mean X <b>" + mx.toFixed(2) + "</b></span><span>mean Y <b>" +
+        my.toFixed(2) + "</b></span><span>correlation r <b>" + r.toFixed(2) + "</b> (fair: 0)</span>";
+    } else $("scatStats").innerHTML = "<span>observations <b>" + n + "</b> / " + TARGET + "</span><span>X and Y are independent, so expect r near 0</span>";
+  }
+
+  // ---------- gender gap ----------
+  function drawGap() {
+    const show = state.gender || state.students.some((s) => s.pen);
+    $("gapPanel").hidden = !show;
+    if (!show) return;
+    const group = (f) => state.students.map((s, i) => ({ ...sums(s), pen: s.pen || 0, i })).filter((o) => isFemale(o.i) === f);
+    const M = group(false), F = group(true);
+    const avg = (a, k) => (a.length ? mean(a.map((o) => o[k])) : null);
+    const cell = (v) => (v == null ? "–" : v.toFixed(2));
+    const row = (label, a, cls) => '<tr class="' + cls + '"><td>' + label + "</td><td>" + a.length + "</td>" +
+      ["x", "y", "t"].map((k) => "<td>" + cell(avg(a, k)) + "</td>").join("") + "</tr>";
+    let h = row("Male (1–50)", M, "g-m") + row("Female (51–100)", F, "g-f");
+    h += '<tr class="diff"><td>Difference (male − female)</td><td></td>' + ["x", "y", "t"].map((k) => {
+      if (!M.length || !F.length) return "<td>–</td>";
+      const d = avg(M, k) - avg(F, k);
+      return "<td>" + (d > 0 ? "+" : "") + d.toFixed(2) + "</td>";
+    }).join("") + "</tr>";
+    $("gapBody").innerHTML = h;
+    if (!F.length) { $("gapNote").innerHTML = "<span>Female students start at student 51. Roll past 50 to see the gap.</span>"; return; }
+    const exp = mean(F.map((o) => o.pen)) * 10;
+    $("gapNote").innerHTML = "<span>From the penalty alone, expect a total gap of about <b>" + exp.toFixed(2) + "</b> (" + (exp / 2).toFixed(2) +
+      " on X, " + (exp / 2).toFixed(2) + " on Y). The rest is chance" +
+      (state.students.some((s) => s.rich) ? ", the rich-get-richer rule" : "") + (state.students.some((s) => s.rate) ? ", compound interest on the gap" : "") + ".</span>";
+  }
+
+  // ---------- trust fund boost ----------
+  function drawBoost() {
+    const show = state.rich || state.students.some((s) => s.rich);
+    $("boostPanel").hidden = !show;
+    if (!show) return;
+    const all = state.students.map((s, i) => ({ ...sums(s), s, i }));
+    const T = all.filter((o) => o.s.qual), O = all.filter((o) => !o.s.qual);
+    const avg = (a, k) => (a.length ? mean(a.map((o) => o[k])) : null);
+    const cell = (v) => (v == null ? "–" : v.toFixed(2));
+    const row = (label, a, cls) => '<tr class="' + cls + '"><td>' + label + "</td><td>" + a.length + "</td>" +
+      ["x", "y", "t"].map((k) => "<td>" + cell(avg(a, k)) + "</td>").join("") + "</tr>";
+    let h = row("Trust fund kids", T, "g-t") + row("Everyone else", O, "g-o");
+    h += '<tr class="diff"><td>Difference (trust fund − others)</td><td></td>' + ["x", "y", "t"].map((k) => {
+      if (!T.length || !O.length) return "<td>–</td>";
+      const d = avg(T, k) - avg(O, k);
+      return "<td>" + (d > 0 ? "+" : "") + d.toFixed(2) + "</td>";
+    }).join("") + "</tr>";
+    $("boostBody").innerHTML = h;
+    // points gained from re-rolls (final face minus the 1, 2 or 3 it replaced)
+    let nre = 0, gain = 0;
+    T.forEach((o) => o.s.rolls.forEach((r, k) => [0, 1].forEach((j) => { if (rerolled(o.s, k, j)) { nre++; gain += r[j] - o.s.orig[k][j]; } })));
+    // use the re-roll setting each trust fund kid actually played under; before any exist, the current slider
+    const ks = T.length ? T.map((o) => o.s.rmax || 3) : [state.richMax];
+    const mixed = new Set(ks).size > 1;
+    const rg = 8 * mean(ks.map(rerollGain));
+    const note = ["<span>With fair dice, expect a boost of about <b>" + (4.73 + rg).toFixed(2) + "</b>: 4.73 because their first roll was 11 or 12, plus " + rg.toFixed(2) +
+      " from re-rolling dice showing " + (mixed ? "1 up to the setting each student played with" : faceList(ks[0])) + " on rolls 2–5.</span>"];
+    if (T.length) note.push("<span>This class: <b>" + nre + "</b> dice re-rolled, average gain <b>" + (nre ? (gain >= 0 ? "+" : "") + (gain / nre).toFixed(2) : "–") +
+      "</b> per re-roll, <b>" + (gain / T.length).toFixed(2) + "</b> per trust fund kid.</span>");
+    else note.push("<span>No trust fund kids yet. About 1 student in 12 rolls 11 or 12 first.</span>");
+    $("boostNote").innerHTML = note.join("");
+  }
+
+  // ---------- bias check: Welch two-sample t-test ----------
+  function lgamma(z) {
+    const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61571952169124,
+      12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - lgamma(1 - z);
+    z -= 1;
+    let x = c[0];
+    for (let i = 1; i < 9; i++) x += c[i] / (z + i);
+    const t = z + 7.5;
+    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+  }
+  function betacf(a, b, x) {
+    const TINY = 1e-300;
+    let c = 1, d = 1 - ((a + b) * x) / (a + 1);
+    if (Math.abs(d) < TINY) d = TINY;
+    d = 1 / d;
+    let h = d;
+    for (let m = 1; m <= 200; m++) {
+      const m2 = 2 * m;
+      let aa = (m * (b - m) * x) / ((a - 1 + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < TINY) d = TINY;
+      c = 1 + aa / c; if (Math.abs(c) < TINY) c = TINY;
+      d = 1 / d; h *= d * c;
+      aa = (-(a + m) * (a + b + m) * x) / ((a + m2) * (a + 1 + m2));
+      d = 1 + aa * d; if (Math.abs(d) < TINY) d = TINY;
+      c = 1 + aa / c; if (Math.abs(c) < TINY) c = TINY;
+      d = 1 / d;
+      const del = d * c;
+      h *= del;
+      if (Math.abs(del - 1) < 3e-14) break;
+    }
+    return h;
+  }
+  function ibeta(x, a, b) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    const bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+    return x < (a + 1) / (a + b + 2) ? (bt * betacf(a, b, x)) / a : 1 - (bt * betacf(b, a, 1 - x)) / b;
+  }
+  function welch(a, b) {
+    const ma = mean(a), mb = mean(b);
+    const va = a.reduce((s, v) => s + (v - ma) ** 2, 0) / (a.length - 1), vb = b.reduce((s, v) => s + (v - mb) ** 2, 0) / (b.length - 1);
+    const se2 = va / a.length + vb / b.length;
+    const t = (ma - mb) / Math.sqrt(se2);
+    const df = se2 ** 2 / ((va / a.length) ** 2 / (a.length - 1) + (vb / b.length) ** 2 / (b.length - 1));
+    return { d: ma - mb, t, df, p: ibeta(df / (df + t * t), df / 2, 0.5) };
+  }
+  const pText = (p) => (p < 0.001 ? "p < 0.001" : "p = " + p.toFixed(3));
+  function metricHTML(name, r) {
+    const sig = r.p < 0.05;
+    return '<div class="metric"><span class="name">' + name + '</span><span class="val">' + (r.d > 0 ? "+" : "") + r.d.toFixed(2) + " pts</span>" +
+      '<span class="sub2">Welch t<sup>1</sup> = ' + r.t.toFixed(2) + ", df<sup>2</sup> = " + r.df.toFixed(0) + ", " + pText(r.p) + ' <span class="sig' + (sig ? "" : " no") + '">' +
+      (sig ? "significant" : "not significant") + "</span></span></div>";
+  }
+  function drawBias() {
+    const studs = state.students;
+    const totals = studs.map((s) => sums(s).t);
+    const parts = [], lines = [];
+    if (studs.some((s) => s.pen)) {
+      const m = totals.filter((_, i) => !isFemale(i)), f = totals.filter((_, i) => isFemale(i));
+      if (m.length > 1 && f.length > 1) {
+        const r = welch(m, f);
+        const pen = mean(studs.filter((s, i) => isFemale(i)).map((s) => s.pen || 0));
+        parts.push(metricHTML("Gender gap (male − female)", r));
+        lines.push("Female students averaged " + Math.abs(r.d).toFixed(2) + " points " + (r.d >= 0 ? "less" : "more") + " than male students (" + pText(r.p) + "), " +
+          (r.p < 0.05 ? "a statistically significant gap" : "too small a gap to rule out chance") + " caused by the −" + pen.toFixed(1) +
+          " penalty on each of the 10 dice a female student rolls, which on its own removes " + (pen * 10).toFixed(1) + " points.");
+      }
+    }
+    if (studs.some((s) => s.rich)) {
+      const t = totals.filter((_, i) => studs[i].qual), o = totals.filter((_, i) => !studs[i].qual);
+      if (t.length > 1 && o.length > 1) {
+        const r = welch(t, o);
+        const ks = studs.filter((s) => s.qual).map((s) => s.rmax || 3);
+        const k = Math.round(mean(ks));
+        parts.push(metricHTML("Trust fund boost (" + t.length + " kids − others)", r));
+        lines.push("Trust fund kids averaged " + Math.abs(r.d).toFixed(2) + " points " + (r.d >= 0 ? "more" : "less") + " than everyone else (" + pText(r.p) + "), " +
+          (r.p < 0.05 ? "a statistically significant boost" : "too small a boost to rule out chance") + " caused by a first roll of 11 or 12 followed by re-rolling dice showing " +
+          faceList(k) + " on rolls 2–5, which together add about " + (4.73 + 8 * mean(ks.map(rerollGain))).toFixed(1) + " points with fair dice.");
+      } else {
+        lines.push("This class has only " + t.length + " trust fund kid" + (t.length === 1 ? "" : "s") + ", too few to test the boost; about 1 student in 12 rolls an 11 or 12 first.");
+      }
+    }
+    if (studs.some((s) => s.rate)) {
+      // split the class at the median dice-only total and compare the interest each half earned
+      const all = studs.map((s) => sums(s));
+      const order = all.map((o, i) => i).sort((a, b) => all[a].x + all[a].y - (all[b].x + all[b].y));
+      const half = Math.floor(order.length / 2);
+      const lowI = order.slice(0, half).map((i) => all[i].i), highI = order.slice(half).map((i) => all[i].i);
+      if (lowI.length > 1 && highI.length > 1) {
+        const r = welch(highI, lowI);
+        const rate = mean(studs.filter((s) => s.rate).map((s) => s.rate));
+        parts.push(metricHTML("Interest gap (top half − bottom half)", r));
+        lines.push("Compound interest at " + Math.round(rate * 100) + "% added " + fmt2(mean(all.map((o) => o.i))) + " points per student on average, but students with above-median dice totals earned " +
+          fmt2(mean(highI)) + " in interest against " + fmt2(mean(lowI)) + " for the rest (" + pText(r.p) + "), " +
+          (r.p < 0.05 ? "a statistically significant gap" : "too small a gap to rule out chance") +
+          " caused by interest being paid only on savings above 10, after " + EXPENSES + " points of living expenses each roll, and then earning interest itself on every later roll, so an early lead snowballs.");
+      }
+    }
+    if (!lines.length) {
+      $("biasCheck").innerHTML = "<h3>Bias check</h3><p>Turn on a bias scenario and roll a class to measure the bias it creates.</p>";
+      return;
+    }
+    const foot = parts.length ? '<ol class="foot">' +
+      '<li><a href="https://en.wikipedia.org/wiki/Welch%27s_t-test" target="_blank" rel="noopener">Welch t</a> measures how far apart two group averages are, ' +
+      "in units of their combined standard error. It does not assume the two groups vary by the same amount. The further it is from 0, the less likely chance alone made the gap.</li>" +
+      '<li><a href="https://en.wikipedia.org/wiki/Degrees_of_freedom_(statistics)" target="_blank" rel="noopener">df (degrees of freedom)</a> reflects how much data backs the test. ' +
+      "It mostly depends on the size of the smaller group. Fewer degrees of freedom mean a larger t is needed to call a gap significant.</li></ol>" : "";
+    $("biasCheck").innerHTML = "<h3>Bias check</h3>" + parts.join("") + "<p>" + lines.join(" ") + "</p>" + foot;
+  }
+
+  // ---------- roster ----------
+  function drawRoster() {
+    const rows = state.students.map((s, i) => {
+      const t = sums(s), pen = s.pen || 0, f = isFemale(i);
+      const pairs = s.rolls.map((r, k) => "(" + [0, 1].map((j) => (rerolled(s, k, j) ? s.orig[k][j] + "→" : "") + fmt(r[j] - pen)).join(",") + ")").join(" ");
+      const bias = [];
+      if (s.rich) bias.push('<span class="tag' + (s.qual ? " on" : "") + '">' + (s.qual ? "rich: re-rolls" : "rich: no") + "</span>");
+      if (pen) bias.push('<span class="tag on">−' + pen + "</span>");
+      if (s.rate) bias.push('<span class="tag on">+' + fmt2(t.i) + " interest</span>");
+      if (s.exps) bias.push('<span class="tag on">−' + fmt(t.e) + " expenses</span>");
+      return "<tr><td>" + (i + 1) + '</td><td class="left ' + (f ? "g-f" : "g-m") + '">' + (f ? "Female" : "Male") + '</td><td class="pairs">' + pairs +
+        '</td><td class="sx">' + fmt(t.x) + '</td><td class="sy">' + fmt(t.y) + '</td><td class="tt">' + fmt(t.t) +
+        '</td><td class="left">' + bias.join(" ") + "</td></tr>";
+    }).reverse();
+    $("roster").innerHTML = rows.join("") || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">No students yet</td></tr>';
+  }
+
+  // ---------- controls ----------
+  function refresh() {
+    const n = state.students.length, full = n >= TARGET;
+    $("nDone").textContent = n;
+    $("meterM").style.width = Math.min(50, n) + "%";
+    $("meterF").style.width = Math.max(0, Math.min(50, n - 50)) + "%";
+    $("exampleBanner").hidden = !state.example;
+    $("tRich").checked = !!state.rich;
+    $("tGender").checked = !!state.gender;
+    $("tRate").checked = !!state.compound;
+    syncSliders();
+    $("btnNew").disabled = !!anim;
+    $("btnRest").disabled = !!anim;
+    drawHist(); drawScatter(); drawPareto(); drawPdfGender(); drawGini(); drawGap(); drawBoost(); drawBias(); drawRoster();
+  }
+  function commit() { save(); showLatest(); refresh(); }
+
+  // slider values, their readouts and the hover explanations
+  function syncSliders() {
+    const k = state.richMax, p = state.penalty;
+    $("sRich").value = k; $("oRich").textContent = faceRange(k);
+    $("sGender").value = p; $("oGender").textContent = "−" + p.toFixed(1);
+    $("richBox").hidden = !state.rich;
+    $("genderBox").hidden = !state.gender;
+    const rp = Math.round(state.rate * 100);
+    $("sRate").value = state.rate; $("oRate").textContent = rp + "%";
+    $("rateBox").hidden = !state.compound;
+    $("tipRate").textContent = "After each roll, a student pays " + EXPENSES + " in living expenses, then their savings (running total above " + SAVE_FLOOR + ") earn " + rp +
+      "% interest. The interest is added to the total and earns interest itself on later rolls, so students who get ahead early pull further ahead while the rest mostly cover their costs.";
+    $("tipRich").textContent = "If a student's first roll adds up to more than 10 (an 11 or a 12), then on rolls 2–5 any die that lands on " + faceList(k) +
+      " is rolled again, once. These trust fund kids keep an advantage for the rest of the game.";
+    $("tipGender").textContent = "Students 1–50 are male and 51–100 are female. Every die value a female student rolls is reduced by " + p.toFixed(1) +
+      ", so her total drops by " + fmt(p * 10) + " (10 dice × " + p.toFixed(1) + "). This is a small, systematic bias against one group.";
+  }
+
+  function newClass() { state.students = []; state.example = false; $("note").textContent = ""; commit(); }
+
+  $("sRich").addEventListener("input", (e) => {
+    state.richMax = +e.target.value; save(); syncSliders(); drawBoost();
+    $("note").textContent = "Trust fund kids will re-roll dice showing " + faceList(state.richMax) + " in the next class rolled.";
+  });
+  $("sGender").addEventListener("input", (e) => {
+    state.penalty = r1(+e.target.value); save(); syncSliders();
+    $("note").textContent = "Gender penalty set to −" + state.penalty.toFixed(1) + " per die for female students in the next class rolled.";
+  });
+  $("sRate").addEventListener("input", (e) => {
+    state.rate = r1(+e.target.value); save(); syncSliders();
+    $("note").textContent = "Interest rate set to " + Math.round(state.rate * 100) + "% per roll for the next class rolled.";
+  });
+  $("tRate").addEventListener("change", (e) => { state.compound = e.target.checked; save(); syncSliders(); $("note").textContent = "Compound interest is " + (state.compound ? "on" : "off") + " for the next class rolled."; });
+  $("tRich").addEventListener("change", (e) => { state.rich = e.target.checked; save(); syncSliders(); drawBoost(); $("note").textContent = "Rich get richer is " + (state.rich ? "on" : "off") + " for the next class rolled."; });
+  $("tGender").addEventListener("change", (e) => { state.gender = e.target.checked; save(); syncSliders(); drawGap(); $("note").textContent = "Gender penalty is " + (state.gender ? "on" : "off") + " for the next class rolled."; });
+
+  // each press rolls a fresh class of 100 with the current switches and sliders
+  // the class is rolled up front, then students 1–100 flash through the dice panel while the charts fill in
+  $("btnRest").addEventListener("click", () => {
+    if (anim) return;
+    const cls = [];
+    for (let i = 0; i < TARGET; i++) cls.push(rollStudent(i));
+    state.example = false;
+    const done = () => { anim = null; state.students = cls; $("note").textContent = "Rolled 100 students."; commit(); };
+    if (reduced) { done(); return; }
+    state.students = [];
+    let i = 0;
+    anim = setInterval(() => {
+      state.students.push(cls[i++]);
+      showLatest();
+      const box = $("rolls");
+      box.classList.remove("flash"); void box.offsetWidth; box.classList.add("flash");
+      $("nDone").textContent = i;
+      if (i % 5 === 0) refresh();
+      if (i >= TARGET) { clearInterval(anim); done(); }
+    }, 25);
+    refresh();
+  });
+  // clears the class and puts both switches and sliders back to their starting values
+  $("btnNew").addEventListener("click", () => { Object.assign(state, DEFAULTS); newClass(); $("note").textContent = "Reset to default: class cleared, bias scenarios off."; });
+
+  // boot: saved class, else a simulated example class with no bias
+  const saved = load();
+  if (saved) state = saved;
+  else state = { students: Array.from({ length: TARGET }, fairStudent), example: true, ...DEFAULTS };
+  showLatest(); refresh();
+})();
+</script>
